@@ -22,18 +22,17 @@
 -- Basically Text.Regex based on regex-tdfa instead of the buggy regex-posix.
 module ShellCheck.Regex where
 
+import Control.Monad
 import Data.List
 import Data.Maybe
-import Control.Monad
 import Text.Regex.TDFA
 
 -- Precompile the regex
 mkRegex :: String -> Regex
 mkRegex str =
-    let make :: String -> Regex
-        make = makeRegex
-    in
-        make str
+  let make :: String -> Regex
+      make = makeRegex
+   in make str
 
 -- Does the regex match?
 matches :: String -> Regex -> Bool
@@ -42,8 +41,8 @@ matches = flip match
 -- Get all subgroups of the first match
 matchRegex :: Regex -> String -> Maybe [String]
 matchRegex re str = do
-    (_, _, _, groups) <- matchM re str :: Maybe (String,String,String,[String])
-    return groups
+  (_, _, _, groups) <- matchM re str :: Maybe (String, String, String, [String])
+  return groups
 
 -- Get all full matches
 matchAllStrings :: Regex -> String -> [String]
@@ -51,8 +50,9 @@ matchAllStrings re = unfoldr f
   where
     f :: String -> Maybe (String, String)
     f str = do
-        (_, match, rest, _) <- matchM re str :: Maybe (String, String, String, [String])
-        return (match, rest)
+      (_, match, rest, _) <-
+        matchM re str :: Maybe (String, String, String, [String])
+      return (match, rest)
 
 -- Get all subgroups from all matches
 matchAllSubgroups :: Regex -> String -> [[String]]
@@ -60,21 +60,25 @@ matchAllSubgroups re = unfoldr f
   where
     f :: String -> Maybe ([String], String)
     f str = do
-        (_, _, rest, groups) <- matchM re str :: Maybe (String, String, String, [String])
-        return (groups, rest)
+      (_, _, rest, groups) <-
+        matchM re str :: Maybe (String, String, String, [String])
+      return (groups, rest)
 
 -- Replace regex in input with string
 subRegex :: Regex -> String -> String -> String
 subRegex re input replacement = f input
   where
-    f str = fromMaybe str $ do
-        (before, match, after) <- matchM re str :: Maybe (String, String, String)
-        when (null match) $ error ("Internal error: substituted empty in " ++ str)
+    f str =
+      fromMaybe str $ do
+        (before, match, after) <-
+          matchM re str :: Maybe (String, String, String)
+        when (null match) $
+          error ("Internal error: substituted empty in " ++ str)
         return $ before ++ replacement ++ f after
 
 -- Split a string based on a regex.
 splitOn :: String -> Regex -> [String]
 splitOn input re =
-    case matchM re input :: Maybe (String, String, String) of
-        Just (before, match, after) -> before : after `splitOn` re
-        Nothing -> [input]
+  case matchM re input :: Maybe (String, String, String) of
+    Just (before, match, after) -> before : after `splitOn` re
+    Nothing -> [input]
