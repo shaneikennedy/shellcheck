@@ -17,35 +17,38 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 -}
-module ShellCheck.Analyzer (analyzeScript, ShellCheck.Analyzer.optionalChecks) where
+module ShellCheck.Analyzer
+  ( analyzeScript
+  , ShellCheck.Analyzer.optionalChecks
+  ) where
 
-import ShellCheck.Analytics
-import ShellCheck.AnalyzerLib
-import ShellCheck.Interface
 import Data.List
 import Data.Monoid
+import ShellCheck.Analytics
+import ShellCheck.AnalyzerLib
 import qualified ShellCheck.Checks.Commands
 import qualified ShellCheck.Checks.Custom
 import qualified ShellCheck.Checks.ShellSupport
-
+import ShellCheck.Interface
 
 -- TODO: Clean up the cruft this is layered on
 analyzeScript :: AnalysisSpec -> AnalysisResult
-analyzeScript spec = newAnalysisResult {
-    arComments =
+analyzeScript spec =
+  newAnalysisResult
+    { arComments =
         filterByAnnotation spec params . nub $
-            runAnalytics spec
-            ++ runChecker params (checkers params)
-}
+        runAnalytics spec ++ runChecker params (checkers params)
+    }
   where
     params = makeParameters spec
 
-checkers params = mconcat $ map ($ params) [
-    ShellCheck.Checks.Commands.checker,
-    ShellCheck.Checks.Custom.checker,
-    ShellCheck.Checks.ShellSupport.checker
+checkers params =
+  mconcat $
+  map
+    ($ params)
+    [ ShellCheck.Checks.Commands.checker
+    , ShellCheck.Checks.Custom.checker
+    , ShellCheck.Checks.ShellSupport.checker
     ]
 
-optionalChecks = mconcat $ [
-    ShellCheck.Analytics.optionalChecks
-    ]
+optionalChecks = mconcat $ [ShellCheck.Analytics.optionalChecks]
