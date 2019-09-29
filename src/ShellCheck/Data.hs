@@ -502,4 +502,4 @@ shellForExecutable name =
     "ksh" -> return Ksh
     "ksh88" -> return Ksh
     "ksh93" -> return Ksh
-    otherwise -> Nothing
+    _ -> Nothing
