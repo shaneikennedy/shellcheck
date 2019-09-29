@@ -51,4 +51,4 @@ checkers params =
     , ShellCheck.Checks.ShellSupport.checker
     ]
 
-optionalChecks = mconcat $ [ShellCheck.Analytics.optionalChecks]
+optionalChecks = mconcat [ShellCheck.Analytics.optionalChecks]
