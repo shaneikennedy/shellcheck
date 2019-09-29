@@ -498,9 +498,7 @@ checkBashisms =
               , "suspend"
               , "typeset"
               ] ++
-              if not isDash
-                then ["local"]
-                else []
+                ["local" | not isDash]
             allowedFlags =
               Map.fromList
                 [ ("cd", Just ["L", "P"])
@@ -549,7 +547,7 @@ checkBashisms =
               , ( re $ "^![" ++ varChars ++ "]+[*@]$"
                 , "name matching prefixes are")
               , (re $ "^[" ++ varChars ++ "*@]+:[^-=?+]", "string indexing is")
-              , (re $ "^([*@][%#]|#[@*])", "string operations on $@/$* are")
+              , (re  "^([*@][%#]|#[@*])", "string operations on $@/$* are")
               , ( re $ "^[" ++ varChars ++ "*@]+(\\[.*\\])?/"
                 , "string replacement is")
               ]
@@ -653,7 +651,7 @@ checkBraceExpansionVars = ForShell [Bash] f
         T_DollarBraced {} -> return "$"
         T_DollarExpansion {} -> return "$"
         T_DollarArithmetic {} -> return "$"
-        otherwise -> return "-"
+        _ -> return "-"
     toString t = fromJust $ getLiteralStringExt literalExt t
     isEvaled t = do
       cmd <- getClosestCommandM t
