@@ -172,7 +172,7 @@ applyFix fix fileLines =
   let untabbed =
         fix
           { fixReplacements =
-              map (\c -> removeTabStops c fileLines) $ fixReplacements fix
+              map (`removeTabStops` fileLines) $ fixReplacements fix
           }
       (adjustedFixes, singleLine) = multiToSingleLine [untabbed] fileLines
    in lines . runFixer $ applyFixes2 adjustedFixes singleLine
@@ -220,7 +220,7 @@ applyReplacement2 rep string = do
    in when (l1 /= 1 || l2 /= 1) $
       error "ShellCheck internal error, please report: bad cross-line fix"
   let replacer = repString rep
-  let shift = (length replacer) - (oldEnd - oldStart)
+  let shift = length replacer - (oldEnd - oldStart)
   let insertionPoint =
         case repInsertionPoint rep of
           InsertBefore -> oldStart
@@ -297,7 +297,7 @@ prop_pstreeSumsCorrectly kvs targets
       smartPrefixSums kvs targets =
         let tree =
               foldl (\tree (pos, shift) -> addPSValue pos shift tree) PSLeaf kvs
-         in map (\x -> getPrefixSum x tree) targets
+         in map (`getPrefixSum` tree) targets
    in smartPrefixSums kvs targets == dumbPrefixSums kvs targets
 
 -- Semi-convenient functions for constructing tests.
