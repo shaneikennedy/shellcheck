@@ -280,7 +280,7 @@ data InsertionPoint
   deriving (Show, Eq, Generic, NFData)
 
 instance Ord Replacement where
-  compare r1 r2 = (repStartPos r1) `compare` (repStartPos r2)
+  compare r1 r2 = repStartPos r1 `compare` repStartPos r2
 
 newReplacement =
   Replacement
@@ -344,7 +344,7 @@ mockedSystemInterface files =
       case filter ((== file) . fst) files of
         [] -> return $ Left "File not included in mock."
         [(_, contents)] -> return $ Right contents
-    fs _ _ file = return file
+    fs _ _ = return 
 
 mockRcFile rcfile mock =
   mock {siGetConfig = const . return $ Just (".shellcheckrc", rcfile)}
