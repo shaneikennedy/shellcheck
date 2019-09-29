@@ -1525,7 +1525,7 @@ prop_checkSingleBracketOperators1 =
 
 checkSingleBracketOperators params (TC_Binary id SingleBracket "=~" lhs rhs) =
   when (shellType params `elem` [Bash, Ksh]) $
-  err id 2074  "Can't use =~ in [ ]. Use [[..]] instead."
+  err id 2074 "Can't use =~ in [ ]. Use [[..]] instead."
 checkSingleBracketOperators _ _ = return ()
 
 prop_checkDoubleBracketOperators1 =
@@ -2166,7 +2166,7 @@ checkIndirectExpansion _ (T_DollarBraced i _ (T_NormalWord _ contents)) =
       case t of
         T_DollarExpansion _ _ -> Just True
         T_Backticked _ _ -> Just True
-        T_DollarBraced _ _ _ -> Just True
+        T_DollarBraced {} -> Just True
         T_DollarArithmetic _ _ -> Just True
         T_Literal _ s ->
           if all isVariableChar s
@@ -2226,7 +2226,7 @@ checkInexplicablyUnquoted params (T_NormalWord id tokens) =
     isRegex t =
       case t of
         (T_Redirecting {}:_) -> False
-        (a:(TC_Binary _ _ "=~" lhs rhs):rest) -> getId a == getId rhs
+        (a:TC_Binary _ _ "=~" lhs rhs:rest) -> getId a == getId rhs
         _:rest -> isRegex rest
         _ -> False
     -- If the surrounding quotes quote single things, like "$foo"_and_then_some_"$stuff",
@@ -2234,7 +2234,7 @@ checkInexplicablyUnquoted params (T_NormalWord id tokens) =
     quotesSingleThing x =
       case x of
         [T_DollarExpansion _ _] -> True
-        [T_DollarBraced _ _ _] -> True
+        [T_DollarBraced {}] -> True
         [T_Backticked _ _] -> True
         _ -> False
     warnAboutExpansion id =
@@ -2677,7 +2677,7 @@ checkVerboseSpacefulness params = checkSpacefulness' onFind params
             (addDoubleQuotesAround params token)
         ]
 
-addDoubleQuotesAround params token = (surroundWidth (getId token) params "\"")
+addDoubleQuotesAround params token = surroundWidth (getId token) params "\""
 
 checkSpacefulness' ::
      (Bool -> Token -> String -> Writer [TokenComment] ())
@@ -2721,7 +2721,7 @@ checkSpacefulness' onFind params t =
     parents = parentMap params
     isExpansion t =
       case t of
-        (T_DollarBraced _ _ _) -> True
+        T_DollarBraced {} -> True
         _ -> False
     isSpacefulWord :: (String -> Bool) -> [Token] -> Bool
     isSpacefulWord f = any (isSpaceful f)
@@ -2734,7 +2734,7 @@ checkSpacefulness' onFind params t =
         T_Extglob {} -> True
         T_Literal _ s -> s `containsAny` globspace
         T_SingleQuoted _ s -> s `containsAny` globspace
-        T_DollarBraced _ _ _ -> spacefulF $ getBracedReference $ bracedString x
+        T_DollarBraced {} -> spacefulF $ getBracedReference $ bracedString x
         T_NormalWord _ w -> isSpacefulWord spacefulF w
         T_DoubleQuoted _ w -> isSpacefulWord spacefulF w
         _ -> False
@@ -2813,7 +2813,7 @@ prop_checkQuotesInLiterals9 =
 checkQuotesInLiterals params t =
   doVariableFlowAnalysis readF writeF Map.empty (variableFlow params)
   where
-    getQuotes name = fmap (Map.lookup name) get
+    getQuotes name = gets (Map.lookup name)
     setQuotes name ref = modify $ Map.insert name ref
     deleteQuotes = modify . Map.delete
     parents = parentMap params
@@ -3279,7 +3279,7 @@ checkUnassignedReferences' includeGlobals params t = warnings
     isInArray var t = any isArray $ getPath (parentMap params) t
       where
         isArray T_Array {} = True
-        isArray b@(T_DollarBraced _ _ _)
+        isArray b@T_DollarBraced {}
           | var /= getBracedReference (bracedString b) = True
         isArray _ = False
     isGuarded (T_DollarBraced _ _ v) = rest `matches` guardRegex
@@ -4577,9 +4577,9 @@ checkSplittingInArrays params t =
         T_DollarBraced id _ str
           | not (isCountingReference part) &&
               not (isQuotedAlternativeReference part) &&
-              not
-                (getBracedReference (bracedString part) `elem`
-                 variablesWithoutSpaces) ->
+              notElem
+                (getBracedReference (bracedString part))
+                variablesWithoutSpaces ->
             warn id 2206 $
             if shellType params == Ksh
               then "Quote to prevent word splitting/globbing, or split robustly with read -A or while read."
@@ -4747,7 +4747,7 @@ prop_checkUseBeforeDefinition4 =
   verifyNotTree checkUseBeforeDefinition "mycmd || mycmd() { f; }"
 
 checkUseBeforeDefinition _ t =
-  execWriter $ evalStateT (mapM_ examine $ revCommands) Map.empty
+  execWriter $ evalStateT (mapM_ examine revCommands) Map.empty
   where
     examine t =
       case t of
@@ -4965,7 +4965,7 @@ prop_checkDollarQuoteParen4 = verifyNot checkDollarQuoteParen "$\"..\""
 
 checkDollarQuoteParen params t =
   case t of
-    T_DollarDoubleQuoted id ((T_Literal _ (c:_)):_)
+    T_DollarDoubleQuoted id (T_Literal _ (c:_):_)
       | c `elem` "({" ->
         warnWithFix
           id
