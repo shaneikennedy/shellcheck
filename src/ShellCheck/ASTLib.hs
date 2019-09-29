@@ -83,7 +83,7 @@ oversimplify token =
     (T_NormalWord _ l) -> [concat (concatMap oversimplify l)]
     (T_DoubleQuoted _ l) -> [concat (concatMap oversimplify l)]
     (T_SingleQuoted _ s) -> [s]
-    (T_DollarBraced _ _ _) -> ["${VAR}"]
+    T_DollarBraced {} -> ["${VAR}"]
     (T_DollarArithmetic _ _) -> ["${VAR}"]
     (T_DollarExpansion _ _) -> ["${VAR}"]
     (T_Backticked _ _) -> ["${VAR}"]
@@ -118,10 +118,10 @@ getAllFlags :: Token -> [(Token, String)]
 getAllFlags = getFlagsUntil (== "--")
 
 -- Get all flags in a BSD way, up until first non-flag argument or --
-getLeadingFlags = getFlagsUntil (\x -> x == "--" || (not $ "-" `isPrefixOf` x))
+getLeadingFlags = getFlagsUntil (\x -> x == "--" || not ( "-" `isPrefixOf` x))
 
 -- Check if a command has a flag.
-hasFlag cmd str = str `elem` (map snd $ getAllFlags cmd)
+hasFlag cmd str = str `elem` map snd  (getAllFlags cmd)
 
 -- Is this token a word that starts with a dash?
 isFlag token =
@@ -142,7 +142,7 @@ bracedString _ =
     "Internal shellcheck error, please report! (bracedString on non-variable)"
 
 -- Is this an expansion of multiple items of an array?
-isArrayExpansion t@(T_DollarBraced _ _ _) =
+isArrayExpansion t@T_DollarBraced {} =
   let string = bracedString t
    in "@" `isPrefixOf` string ||
       not ("#" `isPrefixOf` string) && "[@]" `isInfixOf` string
@@ -151,7 +151,7 @@ isArrayExpansion _ = False
 -- Is it possible that this arg becomes multiple args?
 mayBecomeMultipleArgs t = willBecomeMultipleArgs t || f t
   where
-    f t@(T_DollarBraced _ _ _) =
+    f t@T_DollarBraced {} =
       let string = bracedString t
        in "!" `isPrefixOf` string
     f (T_DoubleQuoted _ parts) = any f parts
@@ -208,7 +208,7 @@ getTrailingUnquotedLiteral t =
 getLeadingUnquotedString :: Token -> Maybe String
 getLeadingUnquotedString t =
   case t of
-    T_NormalWord _ ((T_Literal _ s):_) -> return s
+    T_NormalWord _ (T_Literal _ s:_) -> return s
     _ -> Nothing
 
 -- Maybe get the literal string of this token and any globs in it.
@@ -250,7 +250,7 @@ getLiteralStringExt more = g
           case cs of
             (x:y:more) ->
               if isHexDigit x && isHexDigit y
-                then chr (16 * (digitToInt x) + (digitToInt y)) : rest
+                then chr (16 * digitToInt x + digitToInt y) : rest
                 else '\\' : c : rest
         _
           | isOctDigit c ->
