@@ -112,7 +112,7 @@ outputWiki errRef = do
     shorten msg =
       if length msg < limit
         then msg
-        else (take (limit - 3) msg) ++ "..."
+        else take (limit - 3) msg ++ "..."
 
 outputError options file error = do
   color <- getColorFunc $ foColorOption options
@@ -127,7 +127,7 @@ outputResult options ref result sys = do
 
 outputForFile color sys comments = do
   let fileName = sourceFile (head comments)
-  result <- (siReadFile sys) fileName
+  result <- siReadFile sys fileName
   let contents = either (const "") id result
   let fileLinesList = lines contents
   let lineCount = length fileLinesList
@@ -158,13 +158,13 @@ sliceFile fix lines = (mapPositions adjust fix, sliceLines lines)
     (minLine, maxLine) =
       foldl
         (\(mm, mx) pos ->
-           ( (min mm $ fromIntegral $ posLine pos)
-           , (max mx $ fromIntegral $ posLine pos)))
+           ( min mm $ fromIntegral $ posLine pos
+           , max mx $ fromIntegral $ posLine pos))
         (maxBound, minBound) $
       concatMap (\x -> [repStartPos x, repEndPos x]) $ fixReplacements fix
     sliceLines :: Array Int String -> Array Int String
     sliceLines = ixmap (1, maxLine - minLine + 1) (\x -> x + minLine - 1)
-    adjust pos = pos {posLine = posLine pos - (fromIntegral minLine) + 1}
+    adjust pos = pos {posLine = posLine pos - fromIntegral minLine + 1}
 
 showFixedString ::
      ColorFunc -> [PositionedComment] -> Int -> Array Int String -> IO ()
