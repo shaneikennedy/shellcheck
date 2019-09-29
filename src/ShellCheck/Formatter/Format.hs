@@ -67,7 +67,7 @@ makeNonVirtual comments contents = map fix comments
     arr = listArray (1, length list) list
     untabbedFix f =
       newFix
-        {fixReplacements = map (\r -> removeTabStops r arr) (fixReplacements f)}
+        {fixReplacements = map (`removeTabStops` arr) (fixReplacements f)}
     fix c = (removeTabStops c arr) {pcFix = fmap untabbedFix (pcFix c)}
 
 shouldOutputColor :: ColorOption -> IO Bool
