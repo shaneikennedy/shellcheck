@@ -20,8 +20,8 @@
 module ShellCheck.Formatter.Format where
 
 import ShellCheck.Data
-import ShellCheck.Interface
 import ShellCheck.Fixer
+import ShellCheck.Interface
 
 import Control.Monad
 import Data.Array
@@ -30,50 +30,54 @@ import System.IO
 import System.Info
 
 -- A formatter that carries along an arbitrary piece of data
-data Formatter = Formatter {
-    header ::  IO (),
-    onResult :: CheckResult -> SystemInterface IO -> IO (),
-    onFailure :: FilePath -> ErrorMessage -> IO (),
-    footer :: IO ()
-}
+data Formatter =
+  Formatter
+    { header :: IO ()
+    , onResult :: CheckResult -> SystemInterface IO -> IO ()
+    , onFailure :: FilePath -> ErrorMessage -> IO ()
+    , footer :: IO ()
+    }
 
 sourceFile = posFile . pcStartPos
+
 lineNo = posLine . pcStartPos
+
 endLineNo = posLine . pcEndPos
-colNo  = posColumn . pcStartPos
+
+colNo = posColumn . pcStartPos
+
 endColNo = posColumn . pcEndPos
+
 codeNo = cCode . pcComment
+
 messageText = cMessage . pcComment
 
 severityText :: PositionedComment -> String
 severityText pc =
-    case cSeverity (pcComment pc) of
-        ErrorC   -> "error"
-        WarningC -> "warning"
-        InfoC    -> "info"
-        StyleC   -> "style"
+  case cSeverity (pcComment pc) of
+    ErrorC -> "error"
+    WarningC -> "warning"
+    InfoC -> "info"
+    StyleC -> "style"
 
 -- Realign comments from a tabstop of 8 to 1
-makeNonVirtual comments contents =
-    map fix comments
+makeNonVirtual comments contents = map fix comments
   where
     list = lines contents
     arr = listArray (1, length list) list
-    untabbedFix f = newFix {
-      fixReplacements = map (\r -> removeTabStops r arr) (fixReplacements f)
-    }
-    fix c = (removeTabStops c arr) {
-      pcFix = fmap untabbedFix (pcFix c)
-    }
-
+    untabbedFix f =
+      newFix
+        {fixReplacements = map (\r -> removeTabStops r arr) (fixReplacements f)}
+    fix c = (removeTabStops c arr) {pcFix = fmap untabbedFix (pcFix c)}
 
 shouldOutputColor :: ColorOption -> IO Bool
 shouldOutputColor colorOption = do
-    term <- hIsTerminalDevice stdout
-    let windows = "mingw" `isPrefixOf` os
-    let isUsableTty = term && not windows
-    let useColor = case colorOption of
-                       ColorAlways -> True
-                       ColorNever -> False
-                       ColorAuto -> isUsableTty
-    return useColor
+  term <- hIsTerminalDevice stdout
+  let windows = "mingw" `isPrefixOf` os
+  let isUsableTty = term && not windows
+  let useColor =
+        case colorOption of
+          ColorAlways -> True
+          ColorNever -> False
+          ColorAuto -> isUsableTty
+  return useColor
