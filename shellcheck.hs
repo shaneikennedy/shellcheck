@@ -294,7 +294,7 @@ parseEnum name value list =
       printErr $
         "Unknown value for --" ++
         name ++
-        ". " ++ "Valid options are: " ++ (intercalate ", " $ map fst list)
+        ". " ++ "Valid options are: " ++ intercalate ", " (map fst list)
       throwError SupportFailure
 
 parseColorOption value =
@@ -362,7 +362,7 @@ parseOption flag options =
           }
     Flag "source-path" str -> do
       let paths = splitSearchPath str
-      return options {sourcePaths = (sourcePaths options) ++ paths}
+      return options {sourcePaths = sourcePaths options ++ paths}
     Flag "sourced" _ ->
       return options {checkSpec = (checkSpec options) {csCheckSourced = True}}
     Flag "severity" severity -> do
@@ -384,7 +384,7 @@ parseOption flag options =
               { checkSpec =
                   cs
                     { csOptionalChecks =
-                        (csOptionalChecks cs) ++ split ',' value
+                        csOptionalChecks cs ++ split ',' value
                     }
               }
         -- This flag is handled specially in 'process'
@@ -503,7 +503,7 @@ ioInterface options files = do
       where
         find filename deflt = do
           sources <-
-            filterM ((allowable inputs) `andM` doesFileExist) $
+            filterM (allowable inputs `andM` doesFileExist) $
             (adjustPath filename) :
             (map (</> filename) $
              map adjustPath $ sourcePathFlag ++ sourcePathAnnotation)
@@ -512,7 +512,7 @@ ioInterface options files = do
             (first:_) -> return first
         scriptdir = dropFileName currentScript
         adjustPath str =
-          case (splitDirectories str) of
+          case splitDirectories str of
             ("SCRIPTDIR":rest) -> joinPath (scriptdir : rest)
             _ -> str
 
@@ -570,8 +570,7 @@ printVersion = do
   putStrLn "license: GNU General Public License, version 3"
   putStrLn "website: https://www.shellcheck.net"
 
-printOptional = do
-  mapM f list
+printOptional = mapM f list
   where
     list = sortOn cdName ShellCheck.Analyzer.optionalChecks
     f item = do
