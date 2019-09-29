@@ -465,7 +465,7 @@ getVariableFlow params t =
              when (scopeType /= NoneScope) $ modify (StackScopeEnd :)
     assignFirst T_ForIn {} = True
     assignFirst T_SelectIn {} = True
-    assignFirst (T_BatsTest {}) = True
+    assignFirst T_BatsTest {} = True
     assignFirst _ = False
     setRead t =
       let read = getReferencedVariables (parentMap params) t
@@ -572,7 +572,7 @@ getReferencedVariableCommand base@(T_SimpleCommand _ _ (T_NormalWord _ (T_Litera
         then []
         else concatMap getReference rest
     "declare" ->
-      if any (`elem` flags) ["x", "p"] && (not $ any (`elem` flags) ["f", "F"])
+      if any (`elem` flags) ["x", "p"] && not (any (`elem` flags) ["f", "F"])
         then concatMap getReference rest
         else []
     "trap" ->
@@ -724,7 +724,7 @@ getModifiedVariableCommand base@(T_SimpleCommand _ _ (T_NormalWord _ (T_Literal 
     -- get the FLAGS_ variable created by a shflags DEFINE_ call
     getFlagVariable (n:v:_) = do
       name <- getLiteralString n
-      return (base, n, "FLAGS_" ++ name, DataString $ SourceExternal)
+      return (base, n, "FLAGS_" ++ name, DataString SourceExternal)
     getFlagVariable _ = Nothing
 getModifiedVariableCommand _ = []
 
@@ -764,9 +764,10 @@ getReferencedVariables parents t =
             (getIndexReferences str ++
              getOffsetReferences (getBracedModifier str))
     TA_Variable id name _ ->
-      if isArithmeticAssignment t
-        then []
-        else [(t, t, name)]
+      [(t, t, name) | not (isArithmeticAssignment t)]
+    --   if isArithmeticAssignment t
+    --     then []
+    --     else [(t, t, name)]
     T_Assignment id mode str _ word ->
       [(t, t, str) | mode == Append] ++ specialReferences str t word
     TC_Unary id _ "-v" token -> getIfReference t token
@@ -982,7 +983,7 @@ isCountingReference _ = False
 -- FIXME: doesn't handle ${a:+$var} vs ${a:+"$var"}
 isQuotedAlternativeReference t =
   case t of
-    T_DollarBraced _ _ _ -> getBracedModifier (bracedString t) `matches` re
+    T_DollarBraced {} -> getBracedModifier (bracedString t) `matches` re
     _ -> False
   where
     re = mkRegex "(^|\\]):?\\+"
